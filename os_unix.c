@@ -284,6 +284,7 @@ struct unixFile {
 #endif
 #ifdef SQLITE_ENABLE_SETLK_TIMEOUT
   unsigned iBusyTimeout;              /* Wait this many millisec on locks */
+  int bBlockOnConnect;                /* True to block for SHARED locks */
 #endif
 #if OS_VXWORKS
   struct vxworksFileId *pId;          /* Unique file ID */
@@ -1664,7 +1665,7 @@ static int unixFileLock(unixFile *pFile, struct flock *pLock){
   if( (pFile->ctrlFlags & (UNIXFILE_EXCL|UNIXFILE_RDONLY))==UNIXFILE_EXCL ){
     if( pInode->bProcessLock==0 ){
       struct flock lock;
-      assert( pInode->nLock==0 );
+      /* assert( pInode->nLock==0 ); <-- Not true if unix-excl READONLY used */
       lock.l_whence = SEEK_SET;
       lock.l_start = SHARED_FIRST;
       lock.l_len = SHARED_SIZE;
@@ -1677,6 +1678,13 @@ static int unixFileLock(unixFile *pFile, struct flock *pLock){
       rc = 0;
     }
   }else{
+#ifdef SQLITE_ENABLE_SETLK_TIMEOUT
+    if( pFile->bBlockOnConnect && pLock->l_type==F_RDLCK 
+     && pLock->l_start==SHARED_FIRST && pLock->l_len==SHARED_SIZE
+    ){
+      rc = osFcntl(pFile->h, F_SETLKW, pLock);
+    }else
+#endif
     rc = osSetPosixAdvisoryLock(pFile->h, pLock, pFile);
   }
   return rc;
@@ -4038,8 +4046,9 @@ static int unixFileControl(sqlite3_file *id, int op, void *pArg){
 #ifdef SQLITE_ENABLE_SETLK_TIMEOUT
     case SQLITE_FCNTL_LOCK_TIMEOUT: {
       int iOld = pFile->iBusyTimeout;
+      int iNew = *(int*)pArg;
 #if SQLITE_ENABLE_SETLK_TIMEOUT==1
-      pFile->iBusyTimeout = *(int*)pArg;
+      pFile->iBusyTimeout = iNew<0 ? 0x7FFFFFFF : (unsigned)iNew;
 #elif SQLITE_ENABLE_SETLK_TIMEOUT==2
       pFile->iBusyTimeout = !!(*(int*)pArg);
 #else
@@ -4048,7 +4057,12 @@ static int unixFileControl(sqlite3_file *id, int op, void *pArg){
       *(int*)pArg = iOld;
       return SQLITE_OK;
     }
-#endif
+    case SQLITE_FCNTL_BLOCK_ON_CONNECT: {
+      int iNew = *(int*)pArg;
+      pFile->bBlockOnConnect = iNew;
+      return SQLITE_OK;
+    }
+#endif /* SQLITE_ENABLE_SETLK_TIMEOUT */
 #if SQLITE_MAX_MMAP_SIZE>0
     case SQLITE_FCNTL_MMAP_SIZE: {
       i64 newLimit = *(i64*)pArg;
@@ -5021,21 +5035,20 @@ static int unixShmLock(
   /* Check that, if this to be a blocking lock, no locks that occur later
   ** in the following list than the lock being obtained are already held:
   **
-  **   1. Checkpointer lock (ofst==1).
-  **   2. Write lock (ofst==0).
-  **   3. Read locks (ofst>=3 && ofst<SQLITE_SHM_NLOCK).
+  **   1. Recovery lock (ofst==2).
+  **   2. Checkpointer lock (ofst==1).
+  **   3. Write lock (ofst==0).
+  **   4. Read locks (ofst>=3 && ofst<SQLITE_SHM_NLOCK).
   **
   ** In other words, if this is a blocking lock, none of the locks that
   ** occur later in the above list than the lock being obtained may be
   ** held.
-  **
-  ** It is not permitted to block on the RECOVER lock.
   */
-#ifdef SQLITE_ENABLE_SETLK_TIMEOUT
+#if defined(SQLITE_ENABLE_SETLK_TIMEOUT) && defined(SQLITE_DEBUG)
   {
     u16 lockMask = (p->exclMask|p->sharedMask);
     assert( (flags & SQLITE_SHM_UNLOCK) || pDbFd->iBusyTimeout==0 || (
-          (ofst!=2)                                   /* not RECOVER */
+          (ofst!=2 || lockMask==0)
        && (ofst!=1 || lockMask==0 || lockMask==2)
        && (ofst!=0 || lockMask<3)
        && (ofst<3  || lockMask<(1<<ofst))
@@ -6840,7 +6853,7 @@ static int unixSleep(sqlite3_vfs *NotUsed, int microseconds){
 
   /* Almost all modern unix systems support nanosleep().  But if you are
   ** compiling for one of the rare exceptions, you can use
-  ** -DHAVE_NANOSLEEP=0 (perhaps in conjuction with -DHAVE_USLEEP if
+  ** -DHAVE_NANOSLEEP=0 (perhaps in conjunction with -DHAVE_USLEEP if
   ** usleep() is available) in order to bypass the use of nanosleep() */
   nanosleep(&sp, NULL);
 

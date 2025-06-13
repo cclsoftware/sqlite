@@ -80,6 +80,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_BUG_COMPATIBLE_20160819
   "BUG_COMPATIBLE_20160819",
 #endif
+#ifdef SQLITE_BUG_COMPATIBLE_20250510
+  "BUG_COMPATIBLE_20250510",
+#endif
 #ifdef SQLITE_CASE_SENSITIVE_LIKE
   "CASE_SENSITIVE_LIKE",
 #endif
@@ -316,6 +319,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_ENABLE_SESSION
   "ENABLE_SESSION",
 #endif
+#ifdef SQLITE_ENABLE_SETLK_TIMEOUT
+  "ENABLE_SETLK_TIMEOUT",
+#endif
 #ifdef SQLITE_ENABLE_SNAPSHOT
   "ENABLE_SNAPSHOT",
 #endif
@@ -369,6 +375,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #endif
 #ifdef SQLITE_EXTRA_INIT
   "EXTRA_INIT=" CTIMEOPT_VAL(SQLITE_EXTRA_INIT),
+#endif
+#ifdef SQLITE_EXTRA_INIT_MUTEXED
+  "EXTRA_INIT_MUTEXED=" CTIMEOPT_VAL(SQLITE_EXTRA_INIT_MUTEXED),
 #endif
 #ifdef SQLITE_EXTRA_SHUTDOWN
   "EXTRA_SHUTDOWN=" CTIMEOPT_VAL(SQLITE_EXTRA_SHUTDOWN),

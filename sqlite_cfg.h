@@ -20,8 +20,8 @@
 #define HAVE_LOCALTIME_R 1
 /* #undef HAVE_LOCALTIME_S */
 #define HAVE_MALLOC_H 1
-#define HAVE_MALLOC_USABLE_SIZE 1
 #define HAVE_MEMORY_H 1
+#define HAVE_NANOSLEEP 1
 #define HAVE_PREAD 1
 #define HAVE_PREAD64 1
 #define HAVE_PTHREAD_CREATE 1
@@ -53,8 +53,8 @@
 #define HAVE_ZLIB_H 1
 #define PACKAGE_BUGREPORT "https://sqlite.org/forum"
 #define PACKAGE_NAME "sqlite"
-#define PACKAGE_STRING "sqlite 3.48.0"
+#define PACKAGE_STRING "sqlite 3.50.1"
 #define PACKAGE_URL "https://sqlite.org"
-#define PACKAGE_VERSION "3.48.0"
+#define PACKAGE_VERSION "3.50.1"
 #define SIZEOF_OFF_T 8
 #endif

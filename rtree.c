@@ -64,6 +64,8 @@
 #endif
 int sqlite3GetToken(const unsigned char*,int*); /* In the SQLite core */
 
+#include <stddef.h>
+
 /*
 ** If building separately, we will need some setup that is normally
 ** found in sqliteInt.h
@@ -93,6 +95,14 @@ typedef unsigned int u32;
 #else
 # define ALWAYS(X)      (X)
 # define NEVER(X)       (X)
+#endif
+#ifndef offsetof
+#define offsetof(STRUCTURE,FIELD) ((size_t)((char*)&((STRUCTURE*)0)->FIELD))
+#endif
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+# define FLEXARRAY
+#else
+# define FLEXARRAY 1
 #endif
 #endif /* !defined(SQLITE_AMALGAMATION) */
 
@@ -414,8 +424,12 @@ struct RtreeMatchArg {
   RtreeGeomCallback cb;       /* Info about the callback functions */
   int nParam;                 /* Number of parameters to the SQL function */
   sqlite3_value **apSqlParam; /* Original SQL parameter values */
-  RtreeDValue aParam[1];      /* Values for parameters to the SQL function */
+  RtreeDValue aParam[FLEXARRAY]; /* Values for parameters to the SQL function */
 };
+
+/* Size of an RtreeMatchArg object with N parameters */
+#define SZ_RTREEMATCHARG(N)  \
+        (offsetof(RtreeMatchArg,aParam)+(N)*sizeof(RtreeDValue))
 
 #ifndef MAX
 # define MAX(x,y) ((x) < (y) ? (y) : (x))
@@ -2105,7 +2119,7 @@ static int rtreeBestIndex(sqlite3_vtab *tab, sqlite3_index_info *pIdxInfo){
 }
 
 /*
-** Return the N-dimensional volumn of the cell stored in *p.
+** Return the N-dimensional volume of the cell stored in *p.
 */
 static RtreeDValue cellArea(Rtree *pRtree, RtreeCell *p){
   RtreeDValue area = (RtreeDValue)1;
@@ -2836,7 +2850,7 @@ static int deleteCell(Rtree *pRtree, RtreeNode *pNode, int iCell, int iHeight){
 
   return rc;
 }
-	
+
 /*
 ** Insert cell pCell into node pNode. Node pNode is the head of a 
 ** subtree iHeight high (leaf nodes have iHeight==0).
@@ -3871,7 +3885,7 @@ static sqlite3_stmt *rtreeCheckPrepare(
 /*
 ** The second and subsequent arguments to this function are a printf()
 ** style format string and arguments. This function formats the string and
-** appends it to the report being accumuated in pCheck.
+** appends it to the report being accumulated in pCheck.
 */
 static void rtreeCheckAppendMsg(RtreeCheck *pCheck, const char *zFmt, ...){
   va_list ap;
@@ -4369,8 +4383,7 @@ static void geomCallback(sqlite3_context *ctx, int nArg, sqlite3_value **aArg){
   sqlite3_int64 nBlob;
   int memErr = 0;
 
-  nBlob = sizeof(RtreeMatchArg) + (nArg-1)*sizeof(RtreeDValue)
-           + nArg*sizeof(sqlite3_value*);
+  nBlob = SZ_RTREEMATCHARG(nArg) + nArg*sizeof(sqlite3_value*);
   pBlob = (RtreeMatchArg *)sqlite3_malloc64(nBlob);
   if( !pBlob ){
     sqlite3_result_error_nomem(ctx);

@@ -182,4 +182,5 @@
 #define TK_ERROR                          182
 #define TK_QNUMBER                        183
 #define TK_SPACE                          184
-#define TK_ILLEGAL                        185
+#define TK_COMMENT                        185
+#define TK_ILLEGAL                        186

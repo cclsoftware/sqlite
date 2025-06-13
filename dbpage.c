@@ -395,8 +395,8 @@ static int dbpageUpdate(
       /* "INSERT INTO dbpage($PGNO,NULL)" causes page number $PGNO and
       ** all subsequent pages to be deleted. */
       pTab->iDbTrunc = iDb;
-      pgno--;
-      pTab->pgnoTrunc = pgno;
+      pTab->pgnoTrunc = pgno-1;
+      pgno = 1;
     }else{
       zErr = "bad page value";
       goto update_fail;
@@ -424,6 +424,7 @@ static int dbpageUpdate(
   return rc;
 
 update_fail:
+  pTab->pgnoTrunc = 0;
   sqlite3_free(pVtab->zErrMsg);
   pVtab->zErrMsg = sqlite3_mprintf("%s", zErr);
   return SQLITE_ERROR;
