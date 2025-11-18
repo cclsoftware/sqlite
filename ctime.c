@@ -214,6 +214,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_ENABLE_BYTECODE_VTAB
   "ENABLE_BYTECODE_VTAB",
 #endif
+#ifdef SQLITE_ENABLE_CARRAY
+  "ENABLE_CARRAY",
+#endif
 #ifdef SQLITE_ENABLE_CEROD
   "ENABLE_CEROD=" CTIMEOPT_VAL(SQLITE_ENABLE_CEROD),
 #endif
@@ -303,6 +306,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #endif
 #ifdef SQLITE_ENABLE_OVERSIZE_CELL_CHECK
   "ENABLE_OVERSIZE_CELL_CHECK",
+#endif
+#ifdef SQLITE_ENABLE_PERCENTILE
+  "ENABLE_PERCENTILE",
 #endif
 #ifdef SQLITE_ENABLE_PREUPDATE_HOOK
   "ENABLE_PREUPDATE_HOOK",

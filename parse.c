@@ -225,7 +225,7 @@ static void updateDeleteLimitError(
       pA->pRight = 0;
     }
   }
-#line 1582 "parse.y"
+#line 1591 "parse.y"
 
   /* Add a single new term to an ExprList that is used to store a
   ** list of identifiers.  Report an error if the ID list contains
@@ -249,7 +249,7 @@ static void updateDeleteLimitError(
     sqlite3ExprListSetName(pParse, p, pIdToken, 1);
     return p;
   }
-#line 2071 "parse.y"
+#line 2080 "parse.y"
 
 #if TK_SPAN>255
 # error too many tokens in the grammar
@@ -2478,7 +2478,7 @@ sqlite3ExprDelete(pParse->db, (yypminor->yy590));
     case 282: /* case_exprlist */
     case 314: /* part_opt */
 {
-#line 1580 "parse.y"
+#line 1589 "parse.y"
 sqlite3ExprListDelete(pParse->db, (yypminor->yy402));
 #line 2508 "parse.sql"
 }
@@ -2496,7 +2496,7 @@ sqlite3SrcListDelete(pParse->db, (yypminor->yy563));
       break;
     case 243: /* wqlist */
 {
-#line 1871 "parse.y"
+#line 1880 "parse.y"
 sqlite3WithDelete(pParse->db, (yypminor->yy125));
 #line 2526 "parse.sql"
 }
@@ -2504,7 +2504,7 @@ sqlite3WithDelete(pParse->db, (yypminor->yy125));
     case 253: /* window_clause */
     case 310: /* windowdefn_list */
 {
-#line 2000 "parse.y"
+#line 2009 "parse.y"
 sqlite3WindowListDelete(pParse->db, (yypminor->yy483));
 #line 2534 "parse.sql"
 }
@@ -2523,7 +2523,7 @@ sqlite3IdListDelete(pParse->db, (yypminor->yy204));
     case 313: /* frame_opt */
     case 316: /* over_clause */
 {
-#line 1939 "parse.y"
+#line 1948 "parse.y"
 sqlite3WindowDelete(pParse->db, (yypminor->yy483));
 #line 2553 "parse.sql"
 }
@@ -2531,14 +2531,14 @@ sqlite3WindowDelete(pParse->db, (yypminor->yy483));
     case 289: /* trigger_cmd_list */
     case 294: /* trigger_cmd */
 {
-#line 1699 "parse.y"
+#line 1708 "parse.y"
 sqlite3DeleteTriggerStep(pParse->db, (yypminor->yy319));
 #line 2561 "parse.sql"
 }
       break;
     case 291: /* trigger_event */
 {
-#line 1685 "parse.y"
+#line 1694 "parse.y"
 sqlite3IdListDelete(pParse->db, (yypminor->yy28).b);
 #line 2568 "parse.sql"
 }
@@ -2547,7 +2547,7 @@ sqlite3IdListDelete(pParse->db, (yypminor->yy28).b);
     case 319: /* frame_bound_s */
     case 320: /* frame_bound_e */
 {
-#line 1944 "parse.y"
+#line 1953 "parse.y"
 sqlite3ExprDelete(pParse->db, (yypminor->yy205).pExpr);
 #line 2577 "parse.sql"
 }
@@ -5058,12 +5058,21 @@ static YYACTIONTYPE yy_reduce(
       **      expr1 IN ()
       **      expr1 NOT IN ()
       **
-      ** simplify to constants 0 (false) and 1 (true), respectively,
-      ** regardless of the value of expr1.
+      ** simplify to constants 0 (false) and 1 (true), respectively.
+      **
+      ** Except, do not apply this optimization if expr1 contains a function
+      ** because that function might be an aggregate (we don't know yet whether
+      ** it is or not) and if it is an aggregate, that could change the meaning
+      ** of the whole query.
       */
-      sqlite3ExprUnmapAndDelete(pParse, yymsp[-4].minor.yy590);
-      yymsp[-4].minor.yy590 = sqlite3Expr(pParse->db, TK_STRING, yymsp[-3].minor.yy502 ? "true" : "false");
-      if( yymsp[-4].minor.yy590 ) sqlite3ExprIdToTrueFalse(yymsp[-4].minor.yy590);
+      Expr *pB = sqlite3Expr(pParse->db, TK_STRING, yymsp[-3].minor.yy502 ? "true" : "false");
+      if( pB ) sqlite3ExprIdToTrueFalse(pB);
+      if( !ExprHasProperty(yymsp[-4].minor.yy590, EP_HasFunc) ){
+        sqlite3ExprUnmapAndDelete(pParse, yymsp[-4].minor.yy590);
+        yymsp[-4].minor.yy590 = pB;
+      }else{
+        yymsp[-4].minor.yy590 = sqlite3PExpr(pParse, yymsp[-3].minor.yy502 ? TK_OR : TK_AND, pB, yymsp[-4].minor.yy590);
+      }
     }else{
       Expr *pRHS = yymsp[-1].minor.yy402->a[0].pExpr;
       if( yymsp[-1].minor.yy402->nExpr==1 && sqlite3ExprIsConstant(pParse,pRHS) && yymsp[-4].minor.yy590->op!=TK_VECTOR ){
@@ -5095,27 +5104,27 @@ static YYACTIONTYPE yy_reduce(
       if( yymsp[-3].minor.yy502 ) yymsp[-4].minor.yy590 = sqlite3PExpr(pParse, TK_NOT, yymsp[-4].minor.yy590, 0);
     }
   }
-#line 5123 "parse.sql"
+#line 5132 "parse.sql"
         break;
       case 224: /* expr ::= LP select RP */
-#line 1469 "parse.y"
+#line 1478 "parse.y"
 {
     yymsp[-2].minor.yy590 = sqlite3PExpr(pParse, TK_SELECT, 0, 0);
     sqlite3PExprAddSelect(pParse, yymsp[-2].minor.yy590, yymsp[-1].minor.yy637);
   }
-#line 5131 "parse.sql"
+#line 5140 "parse.sql"
         break;
       case 225: /* expr ::= expr in_op LP select RP */
-#line 1473 "parse.y"
+#line 1482 "parse.y"
 {
     yymsp[-4].minor.yy590 = sqlite3PExpr(pParse, TK_IN, yymsp[-4].minor.yy590, 0);
     sqlite3PExprAddSelect(pParse, yymsp[-4].minor.yy590, yymsp[-1].minor.yy637);
     if( yymsp[-3].minor.yy502 ) yymsp[-4].minor.yy590 = sqlite3PExpr(pParse, TK_NOT, yymsp[-4].minor.yy590, 0);
   }
-#line 5140 "parse.sql"
+#line 5149 "parse.sql"
         break;
       case 226: /* expr ::= expr in_op nm dbnm paren_exprlist */
-#line 1478 "parse.y"
+#line 1487 "parse.y"
 {
     SrcList *pSrc = sqlite3SrcListAppend(pParse, 0,&yymsp[-2].minor.yy0,&yymsp[-1].minor.yy0);
     Select *pSelect = sqlite3SelectNew(pParse, 0,pSrc,0,0,0,0,0,0);
@@ -5124,19 +5133,19 @@ static YYACTIONTYPE yy_reduce(
     sqlite3PExprAddSelect(pParse, yymsp[-4].minor.yy590, pSelect);
     if( yymsp[-3].minor.yy502 ) yymsp[-4].minor.yy590 = sqlite3PExpr(pParse, TK_NOT, yymsp[-4].minor.yy590, 0);
   }
-#line 5152 "parse.sql"
+#line 5161 "parse.sql"
         break;
       case 227: /* expr ::= EXISTS LP select RP */
-#line 1486 "parse.y"
+#line 1495 "parse.y"
 {
     Expr *p;
     p = yymsp[-3].minor.yy590 = sqlite3PExpr(pParse, TK_EXISTS, 0, 0);
     sqlite3PExprAddSelect(pParse, p, yymsp[-1].minor.yy637);
   }
-#line 5161 "parse.sql"
+#line 5170 "parse.sql"
         break;
       case 228: /* expr ::= CASE case_operand case_exprlist case_else END */
-#line 1494 "parse.y"
+#line 1503 "parse.y"
 {
   yymsp[-4].minor.yy590 = sqlite3PExpr(pParse, TK_CASE, yymsp[-3].minor.yy590, 0);
   if( yymsp[-4].minor.yy590 ){
@@ -5147,42 +5156,42 @@ static YYACTIONTYPE yy_reduce(
     sqlite3ExprDelete(pParse->db, yymsp[-1].minor.yy590);
   }
 }
-#line 5175 "parse.sql"
+#line 5184 "parse.sql"
         break;
       case 229: /* case_exprlist ::= case_exprlist WHEN expr THEN expr */
-#line 1506 "parse.y"
+#line 1515 "parse.y"
 {
   yymsp[-4].minor.yy402 = sqlite3ExprListAppend(pParse,yymsp[-4].minor.yy402, yymsp[-2].minor.yy590);
   yymsp[-4].minor.yy402 = sqlite3ExprListAppend(pParse,yymsp[-4].minor.yy402, yymsp[0].minor.yy590);
 }
-#line 5183 "parse.sql"
+#line 5192 "parse.sql"
         break;
       case 230: /* case_exprlist ::= WHEN expr THEN expr */
-#line 1510 "parse.y"
+#line 1519 "parse.y"
 {
   yymsp[-3].minor.yy402 = sqlite3ExprListAppend(pParse,0, yymsp[-2].minor.yy590);
   yymsp[-3].minor.yy402 = sqlite3ExprListAppend(pParse,yymsp[-3].minor.yy402, yymsp[0].minor.yy590);
 }
-#line 5191 "parse.sql"
+#line 5200 "parse.sql"
         break;
       case 235: /* nexprlist ::= nexprlist COMMA expr */
-#line 1531 "parse.y"
+#line 1540 "parse.y"
 {yymsp[-2].minor.yy402 = sqlite3ExprListAppend(pParse,yymsp[-2].minor.yy402,yymsp[0].minor.yy590);}
-#line 5196 "parse.sql"
+#line 5205 "parse.sql"
         break;
       case 236: /* nexprlist ::= expr */
-#line 1533 "parse.y"
+#line 1542 "parse.y"
 {yymsp[0].minor.yy402 = sqlite3ExprListAppend(pParse,0,yymsp[0].minor.yy590); /*A-overwrites-Y*/}
-#line 5201 "parse.sql"
+#line 5210 "parse.sql"
         break;
       case 238: /* paren_exprlist ::= LP exprlist RP */
       case 243: /* eidlist_opt ::= LP eidlist RP */ yytestcase(yyruleno==243);
-#line 1541 "parse.y"
+#line 1550 "parse.y"
 {yymsp[-2].minor.yy402 = yymsp[-1].minor.yy402;}
-#line 5207 "parse.sql"
+#line 5216 "parse.sql"
         break;
       case 239: /* cmd ::= createkw uniqueflag INDEX ifnotexists nm dbnm ON nm LP sortlist RP where_opt */
-#line 1548 "parse.y"
+#line 1557 "parse.y"
 {
   sqlite3CreateIndex(pParse, &yymsp[-7].minor.yy0, &yymsp[-6].minor.yy0, 
                      sqlite3SrcListAppend(pParse,0,&yymsp[-4].minor.yy0,0), yymsp[-2].minor.yy402, yymsp[-10].minor.yy502,
@@ -5191,85 +5200,85 @@ static YYACTIONTYPE yy_reduce(
     sqlite3RenameTokenMap(pParse, pParse->pNewIndex->zName, &yymsp[-4].minor.yy0);
   }
 }
-#line 5219 "parse.sql"
+#line 5228 "parse.sql"
         break;
       case 240: /* uniqueflag ::= UNIQUE */
       case 282: /* raisetype ::= ABORT */ yytestcase(yyruleno==282);
-#line 1558 "parse.y"
+#line 1567 "parse.y"
 {yymsp[0].minor.yy502 = OE_Abort;}
-#line 5225 "parse.sql"
+#line 5234 "parse.sql"
         break;
       case 241: /* uniqueflag ::= */
-#line 1559 "parse.y"
+#line 1568 "parse.y"
 {yymsp[1].minor.yy502 = OE_None;}
-#line 5230 "parse.sql"
+#line 5239 "parse.sql"
         break;
       case 244: /* eidlist ::= eidlist COMMA nm collate sortorder */
-#line 1609 "parse.y"
+#line 1618 "parse.y"
 {
   yymsp[-4].minor.yy402 = parserAddExprIdListTerm(pParse, yymsp[-4].minor.yy402, &yymsp[-2].minor.yy0, yymsp[-1].minor.yy502, yymsp[0].minor.yy502);
 }
-#line 5237 "parse.sql"
+#line 5246 "parse.sql"
         break;
       case 245: /* eidlist ::= nm collate sortorder */
-#line 1612 "parse.y"
+#line 1621 "parse.y"
 {
   yymsp[-2].minor.yy402 = parserAddExprIdListTerm(pParse, 0, &yymsp[-2].minor.yy0, yymsp[-1].minor.yy502, yymsp[0].minor.yy502); /*A-overwrites-Y*/
 }
-#line 5244 "parse.sql"
+#line 5253 "parse.sql"
         break;
       case 248: /* cmd ::= DROP INDEX ifexists fullname */
-#line 1623 "parse.y"
+#line 1632 "parse.y"
 {sqlite3DropIndex(pParse, yymsp[0].minor.yy563, yymsp[-1].minor.yy502);}
-#line 5249 "parse.sql"
+#line 5258 "parse.sql"
         break;
       case 249: /* cmd ::= VACUUM vinto */
-#line 1630 "parse.y"
+#line 1639 "parse.y"
 {sqlite3Vacuum(pParse,0,yymsp[0].minor.yy590);}
-#line 5254 "parse.sql"
+#line 5263 "parse.sql"
         break;
       case 250: /* cmd ::= VACUUM nm vinto */
-#line 1631 "parse.y"
+#line 1640 "parse.y"
 {sqlite3Vacuum(pParse,&yymsp[-1].minor.yy0,yymsp[0].minor.yy590);}
-#line 5259 "parse.sql"
+#line 5268 "parse.sql"
         break;
       case 253: /* cmd ::= PRAGMA nm dbnm */
-#line 1639 "parse.y"
+#line 1648 "parse.y"
 {sqlite3Pragma(pParse,&yymsp[-1].minor.yy0,&yymsp[0].minor.yy0,0,0);}
-#line 5264 "parse.sql"
+#line 5273 "parse.sql"
         break;
       case 254: /* cmd ::= PRAGMA nm dbnm EQ nmnum */
-#line 1640 "parse.y"
+#line 1649 "parse.y"
 {sqlite3Pragma(pParse,&yymsp[-3].minor.yy0,&yymsp[-2].minor.yy0,&yymsp[0].minor.yy0,0);}
-#line 5269 "parse.sql"
+#line 5278 "parse.sql"
         break;
       case 255: /* cmd ::= PRAGMA nm dbnm LP nmnum RP */
-#line 1641 "parse.y"
+#line 1650 "parse.y"
 {sqlite3Pragma(pParse,&yymsp[-4].minor.yy0,&yymsp[-3].minor.yy0,&yymsp[-1].minor.yy0,0);}
-#line 5274 "parse.sql"
+#line 5283 "parse.sql"
         break;
       case 256: /* cmd ::= PRAGMA nm dbnm EQ minus_num */
-#line 1643 "parse.y"
+#line 1652 "parse.y"
 {sqlite3Pragma(pParse,&yymsp[-3].minor.yy0,&yymsp[-2].minor.yy0,&yymsp[0].minor.yy0,1);}
-#line 5279 "parse.sql"
+#line 5288 "parse.sql"
         break;
       case 257: /* cmd ::= PRAGMA nm dbnm LP minus_num RP */
-#line 1645 "parse.y"
+#line 1654 "parse.y"
 {sqlite3Pragma(pParse,&yymsp[-4].minor.yy0,&yymsp[-3].minor.yy0,&yymsp[-1].minor.yy0,1);}
-#line 5284 "parse.sql"
+#line 5293 "parse.sql"
         break;
       case 260: /* cmd ::= createkw trigger_decl BEGIN trigger_cmd_list END */
-#line 1661 "parse.y"
+#line 1670 "parse.y"
 {
   Token all;
   all.z = yymsp[-3].minor.yy0.z;
   all.n = (int)(yymsp[0].minor.yy0.z - yymsp[-3].minor.yy0.z) + yymsp[0].minor.yy0.n;
   sqlite3FinishTrigger(pParse, yymsp[-1].minor.yy319, &all);
 }
-#line 5294 "parse.sql"
+#line 5303 "parse.sql"
         break;
       case 261: /* trigger_decl ::= temp TRIGGER ifnotexists nm dbnm trigger_time trigger_event ON fullname foreach_clause when_clause */
-#line 1670 "parse.y"
+#line 1679 "parse.y"
 {
   sqlite3BeginTrigger(pParse, &yymsp[-7].minor.yy0, &yymsp[-6].minor.yy0, yymsp[-5].minor.yy502, yymsp[-4].minor.yy28.a, yymsp[-4].minor.yy28.b, yymsp[-2].minor.yy563, yymsp[0].minor.yy590, yymsp[-10].minor.yy502, yymsp[-8].minor.yy502);
   yymsp[-10].minor.yy0 = (yymsp[-6].minor.yy0.n==0?yymsp[-7].minor.yy0:yymsp[-6].minor.yy0); /*A-overwrites-T*/
@@ -5278,433 +5287,433 @@ static YYACTIONTYPE yy_reduce(
   pParse->isCreate = 0;       /* But, should not be set for CREATE TRIGGER */
 #endif
 }
-#line 5306 "parse.sql"
+#line 5315 "parse.sql"
         break;
       case 262: /* trigger_time ::= BEFORE|AFTER */
-#line 1680 "parse.y"
+#line 1689 "parse.y"
 { yymsp[0].minor.yy502 = yymsp[0].major; /*A-overwrites-X*/ }
-#line 5311 "parse.sql"
+#line 5320 "parse.sql"
         break;
       case 263: /* trigger_time ::= INSTEAD OF */
-#line 1681 "parse.y"
+#line 1690 "parse.y"
 { yymsp[-1].minor.yy502 = TK_INSTEAD;}
-#line 5316 "parse.sql"
+#line 5325 "parse.sql"
         break;
       case 264: /* trigger_time ::= */
-#line 1682 "parse.y"
+#line 1691 "parse.y"
 { yymsp[1].minor.yy502 = TK_BEFORE; }
-#line 5321 "parse.sql"
+#line 5330 "parse.sql"
         break;
       case 265: /* trigger_event ::= DELETE|INSERT */
       case 266: /* trigger_event ::= UPDATE */ yytestcase(yyruleno==266);
-#line 1686 "parse.y"
+#line 1695 "parse.y"
 {yymsp[0].minor.yy28.a = yymsp[0].major; /*A-overwrites-X*/ yymsp[0].minor.yy28.b = 0;}
-#line 5327 "parse.sql"
+#line 5336 "parse.sql"
         break;
       case 267: /* trigger_event ::= UPDATE OF idlist */
-#line 1688 "parse.y"
+#line 1697 "parse.y"
 {yymsp[-2].minor.yy28.a = TK_UPDATE; yymsp[-2].minor.yy28.b = yymsp[0].minor.yy204;}
-#line 5332 "parse.sql"
+#line 5341 "parse.sql"
         break;
       case 268: /* when_clause ::= */
       case 287: /* key_opt ::= */ yytestcase(yyruleno==287);
-#line 1695 "parse.y"
+#line 1704 "parse.y"
 { yymsp[1].minor.yy590 = 0; }
-#line 5338 "parse.sql"
+#line 5347 "parse.sql"
         break;
       case 269: /* when_clause ::= WHEN expr */
       case 288: /* key_opt ::= KEY expr */ yytestcase(yyruleno==288);
-#line 1696 "parse.y"
+#line 1705 "parse.y"
 { yymsp[-1].minor.yy590 = yymsp[0].minor.yy590; }
-#line 5344 "parse.sql"
+#line 5353 "parse.sql"
         break;
       case 270: /* trigger_cmd_list ::= trigger_cmd_list trigger_cmd SEMI */
-#line 1700 "parse.y"
+#line 1709 "parse.y"
 {
   assert( yymsp[-2].minor.yy319!=0 );
   yymsp[-2].minor.yy319->pLast->pNext = yymsp[-1].minor.yy319;
   yymsp[-2].minor.yy319->pLast = yymsp[-1].minor.yy319;
 }
-#line 5353 "parse.sql"
+#line 5362 "parse.sql"
         break;
       case 271: /* trigger_cmd_list ::= trigger_cmd SEMI */
-#line 1705 "parse.y"
+#line 1714 "parse.y"
 { 
   assert( yymsp[-1].minor.yy319!=0 );
   yymsp[-1].minor.yy319->pLast = yymsp[-1].minor.yy319;
 }
-#line 5361 "parse.sql"
+#line 5370 "parse.sql"
         break;
       case 272: /* trnm ::= nm DOT nm */
-#line 1716 "parse.y"
+#line 1725 "parse.y"
 {
   yymsp[-2].minor.yy0 = yymsp[0].minor.yy0;
   sqlite3ErrorMsg(pParse, 
         "qualified table names are not allowed on INSERT, UPDATE, and DELETE "
         "statements within triggers");
 }
-#line 5371 "parse.sql"
+#line 5380 "parse.sql"
         break;
       case 273: /* tridxby ::= INDEXED BY nm */
-#line 1728 "parse.y"
+#line 1737 "parse.y"
 {
   sqlite3ErrorMsg(pParse,
         "the INDEXED BY clause is not allowed on UPDATE or DELETE statements "
         "within triggers");
 }
-#line 5380 "parse.sql"
+#line 5389 "parse.sql"
         break;
       case 274: /* tridxby ::= NOT INDEXED */
-#line 1733 "parse.y"
+#line 1742 "parse.y"
 {
   sqlite3ErrorMsg(pParse,
         "the NOT INDEXED clause is not allowed on UPDATE or DELETE statements "
         "within triggers");
 }
-#line 5389 "parse.sql"
+#line 5398 "parse.sql"
         break;
       case 275: /* trigger_cmd ::= UPDATE orconf trnm tridxby SET setlist from where_opt scanpt */
-#line 1746 "parse.y"
+#line 1755 "parse.y"
 {yylhsminor.yy319 = sqlite3TriggerUpdateStep(pParse, &yymsp[-6].minor.yy0, yymsp[-2].minor.yy563, yymsp[-3].minor.yy402, yymsp[-1].minor.yy590, yymsp[-7].minor.yy502, yymsp[-8].minor.yy0.z, yymsp[0].minor.yy342);}
-#line 5394 "parse.sql"
+#line 5403 "parse.sql"
   yymsp[-8].minor.yy319 = yylhsminor.yy319;
         break;
       case 276: /* trigger_cmd ::= scanpt insert_cmd INTO trnm idlist_opt select upsert scanpt */
-#line 1750 "parse.y"
+#line 1759 "parse.y"
 {
    yylhsminor.yy319 = sqlite3TriggerInsertStep(pParse,&yymsp[-4].minor.yy0,yymsp[-3].minor.yy204,yymsp[-2].minor.yy637,yymsp[-6].minor.yy502,yymsp[-1].minor.yy403,yymsp[-7].minor.yy342,yymsp[0].minor.yy342);/*yylhsminor.yy319-overwrites-yymsp[-6].minor.yy502*/
 }
-#line 5402 "parse.sql"
+#line 5411 "parse.sql"
   yymsp[-7].minor.yy319 = yylhsminor.yy319;
         break;
       case 277: /* trigger_cmd ::= DELETE FROM trnm tridxby where_opt scanpt */
-#line 1755 "parse.y"
+#line 1764 "parse.y"
 {yylhsminor.yy319 = sqlite3TriggerDeleteStep(pParse, &yymsp[-3].minor.yy0, yymsp[-1].minor.yy590, yymsp[-5].minor.yy0.z, yymsp[0].minor.yy342);}
-#line 5408 "parse.sql"
+#line 5417 "parse.sql"
   yymsp[-5].minor.yy319 = yylhsminor.yy319;
         break;
       case 278: /* trigger_cmd ::= scanpt select scanpt */
-#line 1759 "parse.y"
+#line 1768 "parse.y"
 {yylhsminor.yy319 = sqlite3TriggerSelectStep(pParse->db, yymsp[-1].minor.yy637, yymsp[-2].minor.yy342, yymsp[0].minor.yy342); /*yylhsminor.yy319-overwrites-yymsp[-1].minor.yy637*/}
-#line 5414 "parse.sql"
+#line 5423 "parse.sql"
   yymsp[-2].minor.yy319 = yylhsminor.yy319;
         break;
       case 279: /* expr ::= RAISE LP IGNORE RP */
-#line 1762 "parse.y"
+#line 1771 "parse.y"
 {
   yymsp[-3].minor.yy590 = sqlite3PExpr(pParse, TK_RAISE, 0, 0); 
   if( yymsp[-3].minor.yy590 ){
     yymsp[-3].minor.yy590->affExpr = OE_Ignore;
   }
 }
-#line 5425 "parse.sql"
+#line 5434 "parse.sql"
         break;
       case 280: /* expr ::= RAISE LP raisetype COMMA expr RP */
-#line 1768 "parse.y"
+#line 1777 "parse.y"
 {
   yymsp[-5].minor.yy590 = sqlite3PExpr(pParse, TK_RAISE, yymsp[-1].minor.yy590, 0);
   if( yymsp[-5].minor.yy590 ) {
     yymsp[-5].minor.yy590->affExpr = (char)yymsp[-3].minor.yy502;
   }
 }
-#line 5435 "parse.sql"
+#line 5444 "parse.sql"
         break;
       case 281: /* raisetype ::= ROLLBACK */
-#line 1777 "parse.y"
+#line 1786 "parse.y"
 {yymsp[0].minor.yy502 = OE_Rollback;}
-#line 5440 "parse.sql"
+#line 5449 "parse.sql"
         break;
       case 283: /* raisetype ::= FAIL */
-#line 1779 "parse.y"
+#line 1788 "parse.y"
 {yymsp[0].minor.yy502 = OE_Fail;}
-#line 5445 "parse.sql"
+#line 5454 "parse.sql"
         break;
       case 284: /* cmd ::= DROP TRIGGER ifexists fullname */
-#line 1784 "parse.y"
+#line 1793 "parse.y"
 {
   sqlite3DropTrigger(pParse,yymsp[0].minor.yy563,yymsp[-1].minor.yy502);
 }
-#line 5452 "parse.sql"
+#line 5461 "parse.sql"
         break;
       case 285: /* cmd ::= ATTACH database_kw_opt expr AS expr key_opt */
-#line 1791 "parse.y"
+#line 1800 "parse.y"
 {
   sqlite3Attach(pParse, yymsp[-3].minor.yy590, yymsp[-1].minor.yy590, yymsp[0].minor.yy590);
 }
-#line 5459 "parse.sql"
+#line 5468 "parse.sql"
         break;
       case 286: /* cmd ::= DETACH database_kw_opt expr */
-#line 1794 "parse.y"
+#line 1803 "parse.y"
 {
   sqlite3Detach(pParse, yymsp[0].minor.yy590);
 }
-#line 5466 "parse.sql"
+#line 5475 "parse.sql"
         break;
       case 289: /* cmd ::= REINDEX */
-#line 1809 "parse.y"
+#line 1818 "parse.y"
 {sqlite3Reindex(pParse, 0, 0);}
-#line 5471 "parse.sql"
+#line 5480 "parse.sql"
         break;
       case 290: /* cmd ::= REINDEX nm dbnm */
-#line 1810 "parse.y"
+#line 1819 "parse.y"
 {sqlite3Reindex(pParse, &yymsp[-1].minor.yy0, &yymsp[0].minor.yy0);}
-#line 5476 "parse.sql"
+#line 5485 "parse.sql"
         break;
       case 291: /* cmd ::= ANALYZE */
-#line 1815 "parse.y"
+#line 1824 "parse.y"
 {sqlite3Analyze(pParse, 0, 0);}
-#line 5481 "parse.sql"
+#line 5490 "parse.sql"
         break;
       case 292: /* cmd ::= ANALYZE nm dbnm */
-#line 1816 "parse.y"
+#line 1825 "parse.y"
 {sqlite3Analyze(pParse, &yymsp[-1].minor.yy0, &yymsp[0].minor.yy0);}
-#line 5486 "parse.sql"
+#line 5495 "parse.sql"
         break;
       case 293: /* cmd ::= ALTER TABLE fullname RENAME TO nm */
-#line 1822 "parse.y"
+#line 1831 "parse.y"
 {
   sqlite3AlterRenameTable(pParse,yymsp[-3].minor.yy563,&yymsp[0].minor.yy0);
 }
-#line 5493 "parse.sql"
+#line 5502 "parse.sql"
         break;
       case 294: /* cmd ::= ALTER TABLE add_column_fullname ADD kwcolumn_opt columnname carglist */
-#line 1826 "parse.y"
+#line 1835 "parse.y"
 {
   yymsp[-1].minor.yy0.n = (int)(pParse->sLastToken.z-yymsp[-1].minor.yy0.z) + pParse->sLastToken.n;
   sqlite3AlterFinishAddColumn(pParse, &yymsp[-1].minor.yy0);
 }
-#line 5501 "parse.sql"
+#line 5510 "parse.sql"
         break;
       case 295: /* cmd ::= ALTER TABLE fullname DROP kwcolumn_opt nm */
-#line 1830 "parse.y"
+#line 1839 "parse.y"
 {
   sqlite3AlterDropColumn(pParse, yymsp[-3].minor.yy563, &yymsp[0].minor.yy0);
 }
-#line 5508 "parse.sql"
+#line 5517 "parse.sql"
         break;
       case 296: /* add_column_fullname ::= fullname */
-#line 1834 "parse.y"
+#line 1843 "parse.y"
 {
   disableLookaside(pParse);
   sqlite3AlterBeginAddColumn(pParse, yymsp[0].minor.yy563);
 }
-#line 5516 "parse.sql"
+#line 5525 "parse.sql"
         break;
       case 297: /* cmd ::= ALTER TABLE fullname RENAME kwcolumn_opt nm TO nm */
-#line 1838 "parse.y"
+#line 1847 "parse.y"
 {
   sqlite3AlterRenameColumn(pParse, yymsp[-5].minor.yy563, &yymsp[-2].minor.yy0, &yymsp[0].minor.yy0);
 }
-#line 5523 "parse.sql"
+#line 5532 "parse.sql"
         break;
       case 298: /* cmd ::= create_vtab */
-#line 1850 "parse.y"
+#line 1859 "parse.y"
 {sqlite3VtabFinishParse(pParse,0);}
-#line 5528 "parse.sql"
+#line 5537 "parse.sql"
         break;
       case 299: /* cmd ::= create_vtab LP vtabarglist RP */
-#line 1851 "parse.y"
+#line 1860 "parse.y"
 {sqlite3VtabFinishParse(pParse,&yymsp[0].minor.yy0);}
-#line 5533 "parse.sql"
+#line 5542 "parse.sql"
         break;
       case 300: /* create_vtab ::= createkw VIRTUAL TABLE ifnotexists nm dbnm USING nm */
-#line 1853 "parse.y"
+#line 1862 "parse.y"
 {
     sqlite3VtabBeginParse(pParse, &yymsp[-3].minor.yy0, &yymsp[-2].minor.yy0, &yymsp[0].minor.yy0, yymsp[-4].minor.yy502);
 }
-#line 5540 "parse.sql"
+#line 5549 "parse.sql"
         break;
       case 301: /* vtabarg ::= */
-#line 1858 "parse.y"
+#line 1867 "parse.y"
 {sqlite3VtabArgInit(pParse);}
-#line 5545 "parse.sql"
+#line 5554 "parse.sql"
         break;
       case 302: /* vtabargtoken ::= ANY */
       case 303: /* vtabargtoken ::= lp anylist RP */ yytestcase(yyruleno==303);
       case 304: /* lp ::= LP */ yytestcase(yyruleno==304);
-#line 1860 "parse.y"
+#line 1869 "parse.y"
 {sqlite3VtabArgExtend(pParse,&yymsp[0].minor.yy0);}
-#line 5552 "parse.sql"
+#line 5561 "parse.sql"
         break;
       case 305: /* with ::= WITH wqlist */
       case 306: /* with ::= WITH RECURSIVE wqlist */ yytestcase(yyruleno==306);
-#line 1877 "parse.y"
+#line 1886 "parse.y"
 { sqlite3WithPush(pParse, yymsp[0].minor.yy125, 1); }
-#line 5558 "parse.sql"
+#line 5567 "parse.sql"
         break;
       case 307: /* wqas ::= AS */
-#line 1881 "parse.y"
+#line 1890 "parse.y"
 {yymsp[0].minor.yy444 = M10d_Any;}
-#line 5563 "parse.sql"
+#line 5572 "parse.sql"
         break;
       case 308: /* wqas ::= AS MATERIALIZED */
-#line 1882 "parse.y"
+#line 1891 "parse.y"
 {yymsp[-1].minor.yy444 = M10d_Yes;}
-#line 5568 "parse.sql"
+#line 5577 "parse.sql"
         break;
       case 309: /* wqas ::= AS NOT MATERIALIZED */
-#line 1883 "parse.y"
+#line 1892 "parse.y"
 {yymsp[-2].minor.yy444 = M10d_No;}
-#line 5573 "parse.sql"
+#line 5582 "parse.sql"
         break;
       case 310: /* wqitem ::= withnm eidlist_opt wqas LP select RP */
-#line 1884 "parse.y"
+#line 1893 "parse.y"
 {
   yymsp[-5].minor.yy361 = sqlite3CteNew(pParse, &yymsp[-5].minor.yy0, yymsp[-4].minor.yy402, yymsp[-1].minor.yy637, yymsp[-3].minor.yy444); /*A-overwrites-X*/
 }
-#line 5580 "parse.sql"
+#line 5589 "parse.sql"
         break;
       case 311: /* withnm ::= nm */
-#line 1887 "parse.y"
+#line 1896 "parse.y"
 {pParse->bHasWith = 1;}
-#line 5585 "parse.sql"
+#line 5594 "parse.sql"
         break;
       case 312: /* wqlist ::= wqitem */
-#line 1888 "parse.y"
+#line 1897 "parse.y"
 {
   yymsp[0].minor.yy125 = sqlite3WithAdd(pParse, 0, yymsp[0].minor.yy361); /*A-overwrites-X*/
 }
-#line 5592 "parse.sql"
+#line 5601 "parse.sql"
         break;
       case 313: /* wqlist ::= wqlist COMMA wqitem */
-#line 1891 "parse.y"
+#line 1900 "parse.y"
 {
   yymsp[-2].minor.yy125 = sqlite3WithAdd(pParse, yymsp[-2].minor.yy125, yymsp[0].minor.yy361);
 }
-#line 5599 "parse.sql"
+#line 5608 "parse.sql"
         break;
       case 314: /* windowdefn_list ::= windowdefn_list COMMA windowdefn */
-#line 1907 "parse.y"
+#line 1916 "parse.y"
 {
   assert( yymsp[0].minor.yy483!=0 );
   sqlite3WindowChain(pParse, yymsp[0].minor.yy483, yymsp[-2].minor.yy483);
   yymsp[0].minor.yy483->pNextWin = yymsp[-2].minor.yy483;
   yylhsminor.yy483 = yymsp[0].minor.yy483;
 }
-#line 5609 "parse.sql"
+#line 5618 "parse.sql"
   yymsp[-2].minor.yy483 = yylhsminor.yy483;
         break;
       case 315: /* windowdefn ::= nm AS LP window RP */
-#line 1916 "parse.y"
+#line 1925 "parse.y"
 {
   if( ALWAYS(yymsp[-1].minor.yy483) ){
     yymsp[-1].minor.yy483->zName = sqlite3DbStrNDup(pParse->db, yymsp[-4].minor.yy0.z, yymsp[-4].minor.yy0.n);
   }
   yylhsminor.yy483 = yymsp[-1].minor.yy483;
 }
-#line 5620 "parse.sql"
+#line 5629 "parse.sql"
   yymsp[-4].minor.yy483 = yylhsminor.yy483;
         break;
       case 316: /* window ::= PARTITION BY nexprlist orderby_opt frame_opt */
-#line 1950 "parse.y"
+#line 1959 "parse.y"
 {
   yymsp[-4].minor.yy483 = sqlite3WindowAssemble(pParse, yymsp[0].minor.yy483, yymsp[-2].minor.yy402, yymsp[-1].minor.yy402, 0);
 }
-#line 5628 "parse.sql"
+#line 5637 "parse.sql"
         break;
       case 317: /* window ::= nm PARTITION BY nexprlist orderby_opt frame_opt */
-#line 1953 "parse.y"
+#line 1962 "parse.y"
 {
   yylhsminor.yy483 = sqlite3WindowAssemble(pParse, yymsp[0].minor.yy483, yymsp[-2].minor.yy402, yymsp[-1].minor.yy402, &yymsp[-5].minor.yy0);
 }
-#line 5635 "parse.sql"
+#line 5644 "parse.sql"
   yymsp[-5].minor.yy483 = yylhsminor.yy483;
         break;
       case 318: /* window ::= ORDER BY sortlist frame_opt */
-#line 1956 "parse.y"
+#line 1965 "parse.y"
 {
   yymsp[-3].minor.yy483 = sqlite3WindowAssemble(pParse, yymsp[0].minor.yy483, 0, yymsp[-1].minor.yy402, 0);
 }
-#line 5643 "parse.sql"
+#line 5652 "parse.sql"
         break;
       case 319: /* window ::= nm ORDER BY sortlist frame_opt */
-#line 1959 "parse.y"
+#line 1968 "parse.y"
 {
   yylhsminor.yy483 = sqlite3WindowAssemble(pParse, yymsp[0].minor.yy483, 0, yymsp[-1].minor.yy402, &yymsp[-4].minor.yy0);
 }
-#line 5650 "parse.sql"
+#line 5659 "parse.sql"
   yymsp[-4].minor.yy483 = yylhsminor.yy483;
         break;
       case 320: /* window ::= nm frame_opt */
-#line 1963 "parse.y"
+#line 1972 "parse.y"
 {
   yylhsminor.yy483 = sqlite3WindowAssemble(pParse, yymsp[0].minor.yy483, 0, 0, &yymsp[-1].minor.yy0);
 }
-#line 5658 "parse.sql"
+#line 5667 "parse.sql"
   yymsp[-1].minor.yy483 = yylhsminor.yy483;
         break;
       case 321: /* frame_opt ::= */
-#line 1967 "parse.y"
+#line 1976 "parse.y"
 { 
   yymsp[1].minor.yy483 = sqlite3WindowAlloc(pParse, 0, TK_UNBOUNDED, 0, TK_CURRENT, 0, 0);
 }
-#line 5666 "parse.sql"
+#line 5675 "parse.sql"
         break;
       case 322: /* frame_opt ::= range_or_rows frame_bound_s frame_exclude_opt */
-#line 1970 "parse.y"
+#line 1979 "parse.y"
 { 
   yylhsminor.yy483 = sqlite3WindowAlloc(pParse, yymsp[-2].minor.yy502, yymsp[-1].minor.yy205.eType, yymsp[-1].minor.yy205.pExpr, TK_CURRENT, 0, yymsp[0].minor.yy444);
 }
-#line 5673 "parse.sql"
+#line 5682 "parse.sql"
   yymsp[-2].minor.yy483 = yylhsminor.yy483;
         break;
       case 323: /* frame_opt ::= range_or_rows BETWEEN frame_bound_s AND frame_bound_e frame_exclude_opt */
-#line 1974 "parse.y"
+#line 1983 "parse.y"
 { 
   yylhsminor.yy483 = sqlite3WindowAlloc(pParse, yymsp[-5].minor.yy502, yymsp[-3].minor.yy205.eType, yymsp[-3].minor.yy205.pExpr, yymsp[-1].minor.yy205.eType, yymsp[-1].minor.yy205.pExpr, yymsp[0].minor.yy444);
 }
-#line 5681 "parse.sql"
+#line 5690 "parse.sql"
   yymsp[-5].minor.yy483 = yylhsminor.yy483;
         break;
       case 325: /* frame_bound_s ::= frame_bound */
       case 327: /* frame_bound_e ::= frame_bound */ yytestcase(yyruleno==327);
-#line 1980 "parse.y"
+#line 1989 "parse.y"
 {yylhsminor.yy205 = yymsp[0].minor.yy205;}
-#line 5688 "parse.sql"
+#line 5697 "parse.sql"
   yymsp[0].minor.yy205 = yylhsminor.yy205;
         break;
       case 326: /* frame_bound_s ::= UNBOUNDED PRECEDING */
       case 328: /* frame_bound_e ::= UNBOUNDED FOLLOWING */ yytestcase(yyruleno==328);
       case 330: /* frame_bound ::= CURRENT ROW */ yytestcase(yyruleno==330);
-#line 1981 "parse.y"
+#line 1990 "parse.y"
 {yylhsminor.yy205.eType = yymsp[-1].major; yylhsminor.yy205.pExpr = 0;}
-#line 5696 "parse.sql"
+#line 5705 "parse.sql"
   yymsp[-1].minor.yy205 = yylhsminor.yy205;
         break;
       case 329: /* frame_bound ::= expr PRECEDING|FOLLOWING */
-#line 1986 "parse.y"
+#line 1995 "parse.y"
 {yylhsminor.yy205.eType = yymsp[0].major; yylhsminor.yy205.pExpr = yymsp[-1].minor.yy590;}
-#line 5702 "parse.sql"
+#line 5711 "parse.sql"
   yymsp[-1].minor.yy205 = yylhsminor.yy205;
         break;
       case 331: /* frame_exclude_opt ::= */
-#line 1990 "parse.y"
+#line 1999 "parse.y"
 {yymsp[1].minor.yy444 = 0;}
-#line 5708 "parse.sql"
+#line 5717 "parse.sql"
         break;
       case 332: /* frame_exclude_opt ::= EXCLUDE frame_exclude */
-#line 1991 "parse.y"
+#line 2000 "parse.y"
 {yymsp[-1].minor.yy444 = yymsp[0].minor.yy444;}
-#line 5713 "parse.sql"
+#line 5722 "parse.sql"
         break;
       case 333: /* frame_exclude ::= NO OTHERS */
       case 334: /* frame_exclude ::= CURRENT ROW */ yytestcase(yyruleno==334);
-#line 1994 "parse.y"
+#line 2003 "parse.y"
 {yymsp[-1].minor.yy444 = yymsp[-1].major; /*A-overwrites-X*/}
-#line 5719 "parse.sql"
+#line 5728 "parse.sql"
         break;
       case 335: /* frame_exclude ::= GROUP|TIES */
-#line 1996 "parse.y"
+#line 2005 "parse.y"
 {yymsp[0].minor.yy444 = yymsp[0].major; /*A-overwrites-X*/}
-#line 5724 "parse.sql"
+#line 5733 "parse.sql"
         break;
       case 336: /* window_clause ::= WINDOW windowdefn_list */
-#line 2001 "parse.y"
+#line 2010 "parse.y"
 { yymsp[-1].minor.yy483 = yymsp[0].minor.yy483; }
-#line 5729 "parse.sql"
+#line 5738 "parse.sql"
         break;
       case 337: /* filter_over ::= filter_clause over_clause */
-#line 2003 "parse.y"
+#line 2012 "parse.y"
 {
   if( yymsp[0].minor.yy483 ){
     yymsp[0].minor.yy483->pFilter = yymsp[-1].minor.yy590;
@@ -5713,19 +5722,19 @@ static YYACTIONTYPE yy_reduce(
   }
   yylhsminor.yy483 = yymsp[0].minor.yy483;
 }
-#line 5741 "parse.sql"
+#line 5750 "parse.sql"
   yymsp[-1].minor.yy483 = yylhsminor.yy483;
         break;
       case 338: /* filter_over ::= over_clause */
-#line 2011 "parse.y"
+#line 2020 "parse.y"
 {
   yylhsminor.yy483 = yymsp[0].minor.yy483;
 }
-#line 5749 "parse.sql"
+#line 5758 "parse.sql"
   yymsp[0].minor.yy483 = yylhsminor.yy483;
         break;
       case 339: /* filter_over ::= filter_clause */
-#line 2014 "parse.y"
+#line 2023 "parse.y"
 {
   yylhsminor.yy483 = (Window*)sqlite3DbMallocZero(pParse->db, sizeof(Window));
   if( yylhsminor.yy483 ){
@@ -5735,39 +5744,39 @@ static YYACTIONTYPE yy_reduce(
     sqlite3ExprDelete(pParse->db, yymsp[0].minor.yy590);
   }
 }
-#line 5763 "parse.sql"
+#line 5772 "parse.sql"
   yymsp[0].minor.yy483 = yylhsminor.yy483;
         break;
       case 340: /* over_clause ::= OVER LP window RP */
-#line 2024 "parse.y"
+#line 2033 "parse.y"
 {
   yymsp[-3].minor.yy483 = yymsp[-1].minor.yy483;
   assert( yymsp[-3].minor.yy483!=0 );
 }
-#line 5772 "parse.sql"
+#line 5781 "parse.sql"
         break;
       case 341: /* over_clause ::= OVER nm */
-#line 2028 "parse.y"
+#line 2037 "parse.y"
 {
   yymsp[-1].minor.yy483 = (Window*)sqlite3DbMallocZero(pParse->db, sizeof(Window));
   if( yymsp[-1].minor.yy483 ){
     yymsp[-1].minor.yy483->zName = sqlite3DbStrNDup(pParse->db, yymsp[0].minor.yy0.z, yymsp[0].minor.yy0.n);
   }
 }
-#line 5782 "parse.sql"
+#line 5791 "parse.sql"
         break;
       case 342: /* filter_clause ::= FILTER LP WHERE expr RP */
-#line 2035 "parse.y"
+#line 2044 "parse.y"
 { yymsp[-4].minor.yy590 = yymsp[-1].minor.yy590; }
-#line 5787 "parse.sql"
+#line 5796 "parse.sql"
         break;
       case 343: /* term ::= QNUMBER */
-#line 2061 "parse.y"
+#line 2070 "parse.y"
 {
   yylhsminor.yy590=tokenExpr(pParse,yymsp[0].major,yymsp[0].minor.yy0);
   sqlite3DequoteNumber(pParse, yylhsminor.yy590);
 }
-#line 5795 "parse.sql"
+#line 5804 "parse.sql"
   yymsp[0].minor.yy590 = yylhsminor.yy590;
         break;
       default:
@@ -5903,7 +5912,7 @@ static void yy_syntax_error(
   }else{
     sqlite3ErrorMsg(pParse, "incomplete input");
   }
-#line 5931 "parse.sql"
+#line 5940 "parse.sql"
 /************ End %syntax_error code ******************************************/
   sqlite3ParserARG_STORE /* Suppress warning about unused %extra_argument variable */
   sqlite3ParserCTX_STORE
