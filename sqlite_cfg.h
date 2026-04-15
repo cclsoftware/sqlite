@@ -52,8 +52,8 @@
 #define HAVE_ZLIB_H 1
 #define PACKAGE_BUGREPORT "https://sqlite.org/forum"
 #define PACKAGE_NAME "sqlite"
-#define PACKAGE_STRING "sqlite 3.51.0"
+#define PACKAGE_STRING "sqlite 3.53.0"
 #define PACKAGE_URL "https://sqlite.org"
-#define PACKAGE_VERSION "3.51.0"
+#define PACKAGE_VERSION "3.53.0"
 #define SIZEOF_OFF_T 8
 #endif

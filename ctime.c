@@ -751,6 +751,9 @@ static const char * const sqlite3azCompileOpt[] = {
 #ifdef SQLITE_STMTJRNL_SPILL
   "STMTJRNL_SPILL=" CTIMEOPT_VAL(SQLITE_STMTJRNL_SPILL),
 #endif
+#ifdef SQLITE_STRICT_SUBTYPE
+  "STRICT_SUBTYPE",
+#endif
 #ifdef SQLITE_SUBSTR_COMPATIBILITY
   "SUBSTR_COMPATIBILITY",
 #endif

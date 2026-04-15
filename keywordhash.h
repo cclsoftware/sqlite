@@ -290,8 +290,8 @@ static const unsigned char aKWCode[148] = {0,
 /* Check to see if z[0..n-1] is a keyword. If it is, write the
 ** parser symbol code for that keyword into *pType.  Always
 ** return the integer n (the length of the token). */
-static int keywordCode(const char *z, int n, int *pType){
-  int i, j;
+static i64 keywordCode(const char *z, i64 n, int *pType){
+  i64 i, j;
   const char *zKW;
   assert( n>=2 );
   i = ((charMap(z[0])*4) ^ (charMap(z[n-1])*3) ^ n*1) % 127;
