@@ -50,10 +50,10 @@
 /* #undef HAVE_WASI_SDK */
 #define HAVE_ZLIB 1
 #define HAVE_ZLIB_H 1
-#define PACKAGE_BUGREPORT "https://sqlite.org/forum"
+#define PACKAGE_BUGREPORT "https://sqlite.org/bugs"
 #define PACKAGE_NAME "sqlite"
-#define PACKAGE_STRING "sqlite 3.53.4"
+#define PACKAGE_STRING "sqlite 3.54.1"
 #define PACKAGE_URL "https://sqlite.org"
-#define PACKAGE_VERSION "3.53.4"
+#define PACKAGE_VERSION "3.54.1"
 #define SIZEOF_OFF_T 8
 #endif
